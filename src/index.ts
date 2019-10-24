@@ -31,7 +31,7 @@ export class ExpoMixpanelAnalytics {
 
     this.token = token;
     this.userId = null;
-    this.clientId = Constants.deviceId;
+    this.clientId = null;
     this.osVersion = Platform.Version;
     this.superProps;
 
@@ -57,7 +57,6 @@ export class ExpoMixpanelAnalytics {
         }
 
         this.ready = true;
-        this.identify(this.clientId);
         this._flush();
       });
     });
@@ -120,7 +119,7 @@ export class ExpoMixpanelAnalytics {
   // ===========================================================================================
 
   _flush() {
-    if (this.ready) {
+    if (this.ready && this.clientId) {
       while (this.queue.length) {
         const event = this.queue.pop();
         this._pushEvent(event).then(() => (event.sent = true));
