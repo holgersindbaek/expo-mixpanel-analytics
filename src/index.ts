@@ -9,7 +9,8 @@ const ASYNC_STORAGE_KEY = "mixpanel:super:props";
 const isIosPlatform = Platform.OS === "ios";
 
 export class ExpoMixpanelAnalytics {
-  ready = false;
+  deviceReady = false;
+  userIDReady = false;
   token: string;
   userId: string | null;
   clientId: string;
@@ -26,12 +27,13 @@ export class ExpoMixpanelAnalytics {
   superProps: any = {};
 
   constructor(token) {
-    this.ready = false;
+    this.deviceReady = false;
+    this.userIDReady = false;
     this.queue = [];
 
     this.token = token;
     this.userId = null;
-    this.clientId = null;
+    this.clientId = Constants.deviceId;
     this.osVersion = Platform.Version;
     this.superProps;
 
@@ -56,7 +58,7 @@ export class ExpoMixpanelAnalytics {
           } catch {}
         }
 
-        this.ready = true;
+        this.deviceReady = true;
         this._flush();
       });
     });
@@ -79,10 +81,11 @@ export class ExpoMixpanelAnalytics {
 
   identify(userId: string) {
     this.userId = userId;
+    this.userIDReady = true;
   }
 
   reset() {
-    this.identify(this.clientId);
+    this.userId = this.clientId;
     try {
       AsyncStorage.setItem(ASYNC_STORAGE_KEY, JSON.stringify({}));
     } catch {}
@@ -119,7 +122,7 @@ export class ExpoMixpanelAnalytics {
   // ===========================================================================================
 
   _flush() {
-    if (this.ready && this.clientId) {
+    if (this.deviceReady && this.userIDReady && this.userId) {
       while (this.queue.length) {
         const event = this.queue.pop();
         this._pushEvent(event).then(() => (event.sent = true));
@@ -128,7 +131,7 @@ export class ExpoMixpanelAnalytics {
   }
 
   _people(operation, props) {
-    if (this.userId) {
+    if (this.userIDReady && this.userId) {
       const data = {
         $token: this.token,
         $distinct_id: this.userId
